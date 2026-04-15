@@ -1,8 +1,141 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+
+const FEATURED_REPOS_CONFIG = {
+  owner: 'manu-palmero',
+  limit: 4,
+  excludeForks: true,
+  requiredFields: ['name', 'url', 'language'],
+  scoreWeights: {
+    hasDescription: 2,
+    stars: 0.05,
+    forks: 0.1,
+    type: {
+      product: 2,
+      tool: 1.5,
+      library: 1.25,
+      practice: -1,
+      unknown: 0
+    },
+    language: {
+      Kotlin: 2,
+      Python: 2,
+      JavaScript: 1.5,
+      Java: 1.5,
+      Shell: 1.25,
+      fallback: 0.75
+    },
+    activity: {
+      under30d: 2,
+      under90d: 1,
+      under180d: 0.5,
+      stale: 0
+    }
+  },
+  defaults: {
+    description: 'Proyecto con metadata mínima, priorizado por señales técnicas.',
+    updatedAtLabel: 'Sin fecha reciente',
+    type: 'unknown'
+  }
+}
+
+function hasRequiredMetadata(repo) {
+  return FEATURED_REPOS_CONFIG.requiredFields.every((field) => Boolean(repo[field]))
+}
+
+function normalizeFeaturedRepo(repo) {
+  return {
+    ...repo,
+    type: repo.type ?? FEATURED_REPOS_CONFIG.defaults.type,
+    description: repo.description?.trim() || FEATURED_REPOS_CONFIG.defaults.description
+  }
+}
+
+function calculateRelevanceScore(repo) {
+  const weights = FEATURED_REPOS_CONFIG.scoreWeights
+  const languageWeight = weights.language[repo.language] ?? weights.language.fallback
+  const starsWeight = Math.min(repo.stars ?? 0, 50) * weights.stars
+  const forksWeight = Math.min(repo.forks ?? 0, 10) * weights.forks
+  const typeWeight = weights.type[repo.type] ?? weights.type.unknown
+
+  const lastUpdate = repo.updatedAt ? new Date(repo.updatedAt) : null
+  const now = new Date()
+  const diffInDays = lastUpdate
+    ? Math.max(0, Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)))
+    : 365
+
+  let activityWeight = weights.activity.stale
+  if (diffInDays <= 30) activityWeight = weights.activity.under30d
+  else if (diffInDays <= 90) activityWeight = weights.activity.under90d
+  else if (diffInDays <= 180) activityWeight = weights.activity.under180d
+
+  return Number((
+    (repo.description !== FEATURED_REPOS_CONFIG.defaults.description ? weights.hasDescription : 0) +
+    languageWeight +
+    starsWeight +
+    forksWeight +
+    typeWeight +
+    activityWeight
+  ).toFixed(2))
+}
+
+function applyFeaturedEligibilityRules(repos) {
+  return repos
+    .map(normalizeFeaturedRepo)
+    .filter((repo) => repo.owner === FEATURED_REPOS_CONFIG.owner)
+    .filter((repo) => (FEATURED_REPOS_CONFIG.excludeForks ? repo.fork === false : true))
+    .filter((repo) => hasRequiredMetadata(repo))
+}
+
+function curateFeaturedRepos(repos) {
+  return applyFeaturedEligibilityRules(repos)
+    .map((repo) => ({ ...repo, relevanceScore: calculateRelevanceScore(repo) }))
+    .sort((a, b) => {
+      if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore
+      if ((b.stars ?? 0) !== (a.stars ?? 0)) return (b.stars ?? 0) - (a.stars ?? 0)
+      return a.name.localeCompare(b.name)
+    })
+    .slice(0, FEATURED_REPOS_CONFIG.limit)
+}
+
+function validateFeaturedRepos(rawRepos, curatedRepos) {
+  const invalidCuratedRepo = curatedRepos.find(
+    (repo) => repo.owner !== FEATURED_REPOS_CONFIG.owner || repo.fork === true
+  )
+
+  const eligibleRawCount = applyFeaturedEligibilityRules(rawRepos).length
+  const exceedsLimit = curatedRepos.length > FEATURED_REPOS_CONFIG.limit
+
+  const isSortedByScore = curatedRepos.every((repo, index) => {
+    if (index === 0) return true
+    return curatedRepos[index - 1].relevanceScore >= repo.relevanceScore
+  })
+
+  return {
+    invalidCuratedRepo,
+    eligibleRawCount,
+    exceedsLimit,
+    isSortedByScore
+  }
+}
+
+function formatRelativeUpdate(dateString) {
+  if (!dateString) return FEATURED_REPOS_CONFIG.defaults.updatedAtLabel
+  const date = new Date(dateString)
+  const now = new Date()
+  const days = Math.max(1, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)))
+
+  if (days < 30) return `Actualizado hace ${days} día${days > 1 ? 's' : ''}`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `Actualizado hace ${months} mes${months > 1 ? 'es' : ''}`
+  const years = Math.floor(months / 12)
+  return `Actualizado hace ${years} año${years > 1 ? 's' : ''}`
+}
 
 // Navbar Component
 function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -12,20 +145,78 @@ function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Cerrar con ESC
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+        document.body.classList.remove('menu-open')
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isOpen])
+
+  // Cerrar con click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isOpen && menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false)
+        document.body.classList.remove('menu-open')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
   const scrollTo = (id) => {
+    setIsOpen(false)
+    document.body.classList.remove('menu-open')
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const toggleMenu = () => {
+    const newState = !isOpen
+    setIsOpen(newState)
+    if (newState) {
+      document.body.classList.add('menu-open')
+    } else {
+      document.body.classList.remove('menu-open')
+    }
+  }
+
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} ref={menuRef}>
       <div className="nav-content">
         <div className="logo">MP</div>
+        
+        {/* Desktop Nav Links */}
         <div className="nav-links">
           <button onClick={() => scrollTo('about')}>Sobre mí</button>
           <button onClick={() => scrollTo('skills')}>Skills</button>
           <button onClick={() => scrollTo('projects')}>Proyectos</button>
           <button onClick={() => scrollTo('contact')}>Contacto</button>
         </div>
+
+        {/* Hamburger Button */}
+        <button 
+          className={`hamburger ${isOpen ? 'open' : ''}`} 
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+          aria-expanded={isOpen}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`nav-links mobile-menu ${isOpen ? 'open' : ''}`}>
+        <button onClick={() => scrollTo('about')}>Sobre mí</button>
+        <button onClick={() => scrollTo('skills')}>Skills</button>
+        <button onClick={() => scrollTo('projects')}>Proyectos</button>
+        <button onClick={() => scrollTo('contact')}>Contacto</button>
       </div>
     </nav>
   )
@@ -57,9 +248,9 @@ function Hero() {
         <div className="shape shape-3"></div>
       </div>
       <div className="hero-content">
-        <h1 className="animate-in">Manu Palmero</h1>
-        <p className="typing-text animate-in delay-1">{text}<span className="cursor">|</span></p>
-        <button className="cta-button animate-in delay-2" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}>
+        <h1 className="reveal">Manu Palmero</h1>
+        <p className="typing-text reveal delay-1">{text}<span className="cursor">|</span></p>
+        <button className="cta-button reveal delay-2" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}>
           Ver Proyectos
         </button>
       </div>
@@ -72,8 +263,8 @@ function About() {
   return (
     <section className="about" id="about">
       <div className="container">
-        <h2 className="section-title animate-in">Sobre Mí</h2>
-        <div className="about-card animate-in delay-1">
+        <h2 className="section-title reveal">Sobre Mí</h2>
+        <div className="about-card reveal delay-1">
           <div className="avatar">
             <span>MP</span>
           </div>
@@ -118,10 +309,10 @@ function Skills() {
   return (
     <section className="skills" id="skills">
       <div className="container">
-        <h2 className="section-title animate-in">Tech Stack</h2>
+        <h2 className="section-title reveal">Tech Stack</h2>
         <div className="skills-grid">
           {skillCategories.map((category, idx) => (
-            <div key={idx} className={`skill-card animate-in delay-${idx + 1}`}>
+            <div key={idx} className={`skill-card reveal delay-${idx + 1}`}>
               <h3>{category.title}</h3>
               <div className="skill-tags">
                 {category.skills.map((skill, i) => (
@@ -143,16 +334,24 @@ function Projects() {
       name: 'Patch-Recovery',
       description: 'CI service that patches recovery.img of Dynamic Samsung devices to enable fastbootd.',
       language: 'Python',
-      stars: 0,
+      stars: 9,
       forks: 1,
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'tool',
+      updatedAt: '2026-03-20',
       url: 'https://github.com/manu-palmero/Patch-Recovery'
     },
     {
       name: 'dotfiles',
       description: 'Archivos de configuración personal para mi entorno de desarrollo.',
       language: 'Shell',
-      stars: 0,
+      stars: 3,
       forks: 0,
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'product',
+      updatedAt: '2026-04-01',
       url: 'https://github.com/manu-palmero/dotfiles'
     },
     {
@@ -161,6 +360,10 @@ function Projects() {
       language: 'Markdown',
       stars: 0,
       forks: 0,
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'practice',
+      updatedAt: '2025-11-10',
       url: 'https://github.com/manu-palmero/Tarea-git-programaci-n'
     },
     {
@@ -169,32 +372,104 @@ function Projects() {
       language: 'Markdown',
       stars: 0,
       forks: 0,
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'practice',
+      updatedAt: '2025-10-01',
       url: 'https://github.com/manu-palmero/tarea-git'
     },
     {
-      name: 'tareaGitRamas',
-      description: 'Ejercicios de trabajo con ramas en Git.',
-      language: 'Markdown',
-      stars: 0,
+      name: 'android-kotlin-utils',
+      description: 'Utilities y snippets reutilizables para proyectos Android con Kotlin.',
+      language: 'Kotlin',
+      stars: 12,
+      forks: 2,
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'library',
+      updatedAt: '2026-02-11',
+      url: 'https://github.com/manu-palmero/android-kotlin-utils'
+    },
+    {
+      name: 'linux-workflow-notes',
+      description: '',
+      language: 'Shell',
+      stars: 1,
       forks: 0,
-      url: 'https://github.com/manu-palmero/tareaGitRamas'
+      owner: 'manu-palmero',
+      fork: false,
+      type: 'tool',
+      updatedAt: '2025-07-15',
+      url: 'https://github.com/manu-palmero/linux-workflow-notes'
+    },
+    {
+      name: 'awesome-upstream-project',
+      description: 'Fork de referencia técnica.',
+      language: 'JavaScript',
+      stars: 30,
+      forks: 12,
+      owner: 'manu-palmero',
+      fork: true,
+      type: 'library',
+      updatedAt: '2026-04-07',
+      url: 'https://github.com/manu-palmero/awesome-upstream-project'
+    },
+    {
+      name: 'external-showcase',
+      description: 'Repo de ejemplo de terceros',
+      language: 'JavaScript',
+      stars: 99,
+      forks: 20,
+      owner: 'other-owner',
+      fork: false,
+      type: 'product',
+      updatedAt: '2026-04-05',
+      url: 'https://github.com/other-owner/external-showcase'
     }
   ]
+
+  const featuredProjects = useMemo(() => curateFeaturedRepos(projects), [projects])
+
+  useEffect(() => {
+    const validation = validateFeaturedRepos(projects, featuredProjects)
+
+    if (validation.invalidCuratedRepo) {
+      console.warn('Repositorio inválido detectado en destacados')
+    }
+
+    if (validation.exceedsLimit) {
+      console.warn('La lista de destacados supera el límite configurado')
+    }
+
+    if (!validation.isSortedByScore) {
+      console.warn('El orden de destacados no respeta score descendente')
+    }
+
+    if (validation.eligibleRawCount > 0 && featuredProjects.length === 0) {
+      console.warn('No se muestran destacados pese a tener repos elegibles')
+    }
+  }, [featuredProjects])
 
   return (
     <section className="projects" id="projects">
       <div className="container">
-        <h2 className="section-title animate-in">Proyectos</h2>
+        <h2 className="section-title reveal">Proyectos Destacados</h2>
+        <p className="projects-note reveal delay-1">
+          Solo repos propios, no forks. Ordenados por relevancia profesional.
+        </p>
         <div className="projects-grid">
-          {projects.map((project, idx) => (
+          {featuredProjects.map((project, idx) => (
             <a 
               key={idx} 
               href={project.url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className={`project-card animate-in delay-${idx + 1}`}
+              className={`project-card reveal delay-${idx + 1}`}
             >
-              <h3>{project.name}</h3>
+              <div className="project-header">
+                <h3>{project.name}</h3>
+                <span className="relevance-chip">Score {project.relevanceScore}</span>
+              </div>
               <p>{project.description}</p>
               <div className="project-meta">
                 <span className="language">
@@ -204,6 +479,10 @@ function Projects() {
                 <span className="stats">
                   ⭐ {project.stars} &nbsp; 🍴 {project.forks}
                 </span>
+              </div>
+              <div className="project-footer-meta">
+                <span className={`type-chip ${project.type}`}>{project.type}</span>
+                <span>{formatRelativeUpdate(project.updatedAt)}</span>
               </div>
             </a>
           ))}
@@ -226,13 +505,13 @@ function Stats() {
       <div className="container">
         <div className="stats-grid">
           {stats.map((stat, idx) => (
-            <div key={idx} className={`stat-card animate-in delay-${idx + 1}`}>
+            <div key={idx} className={`stat-card reveal delay-${idx + 1}`}>
               <span className="stat-value">{stat.value}+</span>
               <span className="stat-label">{stat.label}</span>
             </div>
           ))}
         </div>
-        <p className="stats-note animate-in delay-4">
+        <p className="stats-note reveal delay-4">
           🎯 Miembro de <a href="https://github.com/manu-palmero?tab=achievements" target="_blank" rel="noopener noreferrer">Pull Shark</a> club
         </p>
       </div>
@@ -251,11 +530,11 @@ function Contact() {
   return (
     <section className="contact" id="contact">
       <div className="container">
-        <h2 className="section-title animate-in">Contacto</h2>
-        <p className="contact-text animate-in delay-1">
+        <h2 className="section-title reveal">Contacto</h2>
+        <p className="contact-text reveal delay-1">
           ¿Te gustaría trabajar conmigo o simplemente charlar sobre tecnología?
         </p>
-        <div className="social-links animate-in delay-2">
+        <div className="social-links reveal delay-2">
           {socials.map((social, idx) => (
             <a 
               key={idx} 
@@ -285,6 +564,26 @@ function Footer() {
 
 // Main App
 function App() {
+  useEffect(() => {
+    const elements = document.querySelectorAll('.reveal')
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.2 }
+    )
+
+    elements.forEach((element) => observer.observe(element))
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="app">
       <Navbar />
