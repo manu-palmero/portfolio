@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 const FEATURED_REPOS_CONFIG = {
   owner: 'manu-palmero',
@@ -134,6 +134,8 @@ function formatRelativeUpdate(dateString) {
 // Navbar Component
 function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -143,20 +145,78 @@ function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Cerrar con ESC
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+        document.body.classList.remove('menu-open')
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isOpen])
+
+  // Cerrar con click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isOpen && menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false)
+        document.body.classList.remove('menu-open')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
   const scrollTo = (id) => {
+    setIsOpen(false)
+    document.body.classList.remove('menu-open')
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const toggleMenu = () => {
+    const newState = !isOpen
+    setIsOpen(newState)
+    if (newState) {
+      document.body.classList.add('menu-open')
+    } else {
+      document.body.classList.remove('menu-open')
+    }
+  }
+
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} ref={menuRef}>
       <div className="nav-content">
         <div className="logo">MP</div>
+        
+        {/* Desktop Nav Links */}
         <div className="nav-links">
           <button onClick={() => scrollTo('about')}>Sobre mí</button>
           <button onClick={() => scrollTo('skills')}>Skills</button>
           <button onClick={() => scrollTo('projects')}>Proyectos</button>
           <button onClick={() => scrollTo('contact')}>Contacto</button>
         </div>
+
+        {/* Hamburger Button */}
+        <button 
+          className={`hamburger ${isOpen ? 'open' : ''}`} 
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+          aria-expanded={isOpen}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`nav-links mobile-menu ${isOpen ? 'open' : ''}`}>
+        <button onClick={() => scrollTo('about')}>Sobre mí</button>
+        <button onClick={() => scrollTo('skills')}>Skills</button>
+        <button onClick={() => scrollTo('projects')}>Proyectos</button>
+        <button onClick={() => scrollTo('contact')}>Contacto</button>
       </div>
     </nav>
   )
