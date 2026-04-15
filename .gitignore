@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# local tooling/state
+.opencode/
+.windsurf/
+testing_capabilities.md
+
+# OpenSpec local config (machine-specific)
+openspec/config.yaml
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env
+.env.*
+
+# editor/OS
+.DS_Store
+.idea/
+.vscode/
