@@ -1,19 +1,19 @@
 :root {
-  --font-heading: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-heading: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
 
   --bg: #09090b;
   --bg-elevated: #111113;
   --surface: #15151a;
   --surface-2: #1b1b23;
-  --border: #2d2d39;
+  --border: #4a4a4a;
 
   --text-primary: #f5f5f7;
   --text-secondary: #b6b6c4;
-  --text-muted: #8a8aa0;
+  --text-muted: #6d6d7e;
 
-  --primary: #ff3b4d;
-  --primary-strong: #ff1f3d;
+  --primary: #ff3b3b;
+  --primary-strong: #ff1f1f;
   --primary-soft: rgba(255, 59, 77, 0.18);
   --secondary: #ff6b7a;
 
@@ -47,8 +47,17 @@ body,
 
 body {
   font-family: var(--font-body);
-  background: radial-gradient(circle at 20% 10%, rgba(255, 59, 77, 0.16), transparent 40%),
-    radial-gradient(circle at 80% 15%, rgba(255, 107, 122, 0.12), transparent 35%),
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(255, 59, 77, 0.16),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 15%,
+      rgba(255, 107, 122, 0.12),
+      transparent 35%
+    ),
     var(--bg);
   color: var(--text-primary);
   line-height: 1.55;
@@ -87,7 +96,7 @@ section {
 }
 
 .navbar.scrolled {
-  background: rgba(9, 9, 11, 0.75);
+  background: rgba(10, 10, 15, 0.55);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
   padding: 12px 0;
@@ -115,41 +124,89 @@ section {
 .nav-links {
   display: flex;
   gap: 28px;
+  align-items: center;
+  justify-content: center;
+}
+.nav-links {
+  gap: 16px;
 }
 
 .nav-links button {
+  padding: 10px 16px;
   border: 0;
+  border-radius: 10px;
   background: none;
   color: var(--text-secondary);
   font-size: 0.95rem;
   font-family: var(--font-body);
   cursor: pointer;
   position: relative;
-  transition: color var(--motion-fast) var(--motion-ease-out), transform var(--motion-fast) var(--motion-ease-out);
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    color var(--motion-fast) var(--motion-ease-out),
+    transform var(--motion-fast) var(--motion-ease-out);
+}
+
+/* Los botones a la izquierda del hovered se mueven juntos (sin separarse entre sí) */
+.nav-links button:has(~ button:hover),
+.nav-links button:has(~ button:focus-visible) {
+  transform: translateX(-8px);
+}
+
+.nav-links button::before,
+.nav-links button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transform: perspective(700px) rotateY(75deg) rotateX(20deg) skewX(18deg)
+    scale(0.35) translateX(60%);
+  filter: blur(8px) saturate(160%);
+  transform-origin: right center;
+  transition:
+    transform 240ms var(--motion-ease-out),
+    opacity 180ms var(--motion-ease-out),
+    filter 240ms var(--motion-ease-out);
+}
+
+.nav-links button::before {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 59, 77, 0.2),
+    rgba(255, 107, 122, 0.08)
+  );
 }
 
 .nav-links button::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -6px;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--motion-base) var(--motion-ease-emphasis);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 107, 122, 0.55),
+    0 8px 20px rgba(255, 59, 77, 0.22);
 }
 
 .nav-links button:hover,
 .nav-links button:focus-visible {
   color: var(--text-primary);
   transform: translateY(-1px);
+  letter-spacing: 0.01em;
 }
 
+.nav-links button:hover::before,
 .nav-links button:hover::after,
+.nav-links button:focus-visible::before,
 .nav-links button:focus-visible::after {
-  transform: scaleX(1);
+  opacity: 1;
+  transform: perspective(700px) rotateY(0) rotateX(0) skewX(0) scale(1)
+    translateX(0);
+  filter: blur(0) saturate(100%);
+}
+
+/* Solo empuja a los de la derecha para evitar que los de la izquierda se corran */
+.nav-links button:hover ~ button,
+.nav-links button:focus-visible ~ button {
+  transform: translateX(8px);
 }
 
 /* Hamburger Button */
@@ -171,7 +228,9 @@ section {
   width: 100%;
   height: 2px;
   background: var(--text-secondary);
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
   transform-origin: center;
 }
 
@@ -208,7 +267,9 @@ section {
   gap: 24px;
   transform: translateY(-100%);
   opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
   z-index: 999;
 }
 
@@ -328,6 +389,7 @@ section {
   }
 }
 
+/* Define el estilo base del boton CTA y sus animaciones continuas. */
 .cta-button {
   border: 0;
   border-radius: var(--radius-pill);
@@ -335,17 +397,190 @@ section {
   font-size: 1rem;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(120deg, var(--primary), var(--primary-strong));
+  background: linear-gradient(
+    120deg,
+    #ff5a66 0%,
+    #ff2f44 38%,
+    #ff1633 72%,
+    #ff6b7a 100%
+  );
+  background-size: 180% 180%;
   cursor: pointer;
-  transition: transform var(--motion-fast) var(--motion-ease-out), box-shadow var(--motion-base) var(--motion-ease-out), filter var(--motion-base) var(--motion-ease-out);
-  box-shadow: var(--shadow-2);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  letter-spacing: 0.015em;
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    box-shadow var(--motion-base) var(--motion-ease-out),
+    filter var(--motion-base) var(--motion-ease-out),
+    background-position var(--motion-base) var(--motion-ease-out);
+  box-shadow:
+    0 14px 30px rgba(255, 35, 56, 0.38),
+    0 0 0 1px rgba(255, 180, 190, 0.22) inset;
+  animation:
+    cta-gradient-shift 3.2s ease-in-out infinite,
+    cta-breathe 2.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform, box-shadow, filter;
 }
 
+/* Inicializa los pseudo-elementos decorativos para efectos visuales del CTA. */
+.cta-button::before,
+.cta-button::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Renderiza un halo conico giratorio detras del boton. */
+.cta-button::before {
+  inset: -130% -45%;
+  z-index: -1;
+  /* Halo conico en rotacion para dar energia continua al boton */
+  background: conic-gradient(
+    from 20deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.16) 95deg,
+    transparent 180deg,
+    rgba(255, 255, 255, 0.2) 280deg,
+    transparent 360deg
+  );
+  animation: cta-orbit 2.8s linear infinite;
+}
+
+/* Define el brillo deslizante que se activa en interaccion. */
+.cta-button::after {
+  top: 0;
+  left: -35%;
+  width: 36%;
+  height: 100%;
+  /* Barrido de brillo para simular reflejo dinamico */
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg) translateX(-140%);
+  opacity: 0;
+}
+
+/* Intensifica el CTA en hover/focus con lift, brillo y saturacion. */
 .cta-button:hover,
 .cta-button:focus-visible {
   transform: translateY(-3px) scale(1.02);
-  filter: saturate(115%);
-  box-shadow: 0 16px 40px rgba(255, 59, 77, 0.35);
+  filter: saturate(128%) brightness(1.06);
+  background-position: 100% 50%;
+  box-shadow:
+    0 20px 46px rgba(255, 36, 62, 0.48),
+    0 0 0 1px rgba(255, 206, 213, 0.34) inset,
+    0 0 36px rgba(255, 64, 84, 0.42);
+}
+
+/* Dispara el barrido de luz del pseudo-elemento al interactuar. */
+.cta-button:hover::after,
+.cta-button:focus-visible::after {
+  opacity: 1;
+  animation: cta-sheen 300ms linear 1 both;
+}
+
+/* Mejora la accesibilidad mostrando un contorno visible con teclado. */
+.cta-button:focus-visible {
+  outline: 2px solid rgba(255, 170, 180, 0.8);
+  outline-offset: 3px;
+}
+
+/* Anima el desplazamiento del gradiente para mantener el CTA vivo. */
+@keyframes cta-gradient-shift {
+  /* Desplaza el gradiente para evitar un color plano estatico */
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 42% 44%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 58% 56%;
+  }
+}
+
+/* Simula una respiracion luminosa con variaciones progresivas de glow. */
+@keyframes cta-breathe {
+  /* Pulsa la intensidad del glow para dar efecto de respiracion */
+  0%,
+  100% {
+    box-shadow:
+      0 14px 30px rgba(255, 35, 56, 0.38),
+      0 0 0 1px rgba(255, 180, 190, 0.22) inset;
+  }
+  20% {
+    box-shadow:
+      0 15px 31px rgba(255, 35, 56, 0.4),
+      0 0 0 1px rgba(255, 180, 190, 0.24) inset,
+      0 0 12px rgba(255, 71, 96, 0.16);
+  }
+  40% {
+    box-shadow:
+      0 17px 34px rgba(255, 35, 56, 0.45),
+      0 0 0 1px rgba(255, 180, 190, 0.28) inset,
+      0 0 22px rgba(255, 71, 96, 0.28);
+  }
+  60% {
+    box-shadow:
+      0 18px 36px rgba(255, 35, 56, 0.48),
+      0 0 0 1px rgba(255, 180, 190, 0.3) inset,
+      0 0 28px rgba(255, 71, 96, 0.34);
+  }
+  80% {
+    box-shadow:
+      0 15px 31px rgba(255, 35, 56, 0.4),
+      0 0 0 1px rgba(255, 180, 190, 0.24) inset,
+      0 0 10px rgba(255, 71, 96, 0.14);
+  }
+}
+
+/* Rota el halo para aportar energia periferica constante. */
+@keyframes cta-orbit {
+  /* Gira el halo para crear movimiento periferico constante */
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(90deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  75% {
+    transform: rotate(270deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mueve una franja especular de izquierda a derecha sobre el CTA. */
+@keyframes cta-sheen {
+  /* Recorre una franja de luz de izquierda a derecha */
+  0% {
+    transform: skewX(-20deg) translateX(-140%);
+  }
+  /* 20% {
+    transform: skewX(-20deg) translateX(-140%);
+  }
+  45% {
+    transform: skewX(-20deg) translateX(70%);
+  }
+  70% {
+    transform: skewX(-20deg) translateX(300%);
+  } */
+  100% {
+    transform: skewX(-20deg) translateX(380%);
+  }
 }
 
 /* Sections */
@@ -358,7 +593,7 @@ section {
 }
 
 .section-title::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   bottom: -14px;
@@ -374,7 +609,11 @@ section {
 .project-card,
 .stat-card,
 .social-button {
-  background: linear-gradient(180deg, rgba(29, 29, 35, 0.95), rgba(20, 20, 25, 0.95));
+  background: linear-gradient(
+    180deg,
+    rgba(29, 29, 35, 0.95),
+    rgba(20, 20, 25, 0.95)
+  );
   border: 1px solid var(--border);
 }
 
@@ -390,14 +629,21 @@ section {
 }
 
 .about-card::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(130deg, rgba(255, 59, 77, 0.45), rgba(255, 107, 122, 0.2), transparent 60%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: linear-gradient(
+    130deg,
+    rgba(255, 59, 77, 0.45),
+    rgba(255, 107, 122, 0.2),
+    transparent 60%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
 }
 
@@ -450,7 +696,10 @@ section {
 .skill-card {
   border-radius: var(--radius-md);
   padding: 26px;
-  transition: transform var(--motion-fast) var(--motion-ease-out), border-color var(--motion-base) var(--motion-ease-out), box-shadow var(--motion-base) var(--motion-ease-out);
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-base) var(--motion-ease-out),
+    box-shadow var(--motion-base) var(--motion-ease-out);
 }
 
 .skill-card:hover {
@@ -477,7 +726,9 @@ section {
   font-size: 0.88rem;
   border-radius: var(--radius-pill);
   padding: 8px 14px;
-  transition: transform var(--motion-fast) var(--motion-ease-out), background var(--motion-base) var(--motion-ease-out);
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    background var(--motion-base) var(--motion-ease-out);
 }
 
 .skill-tag:hover {
@@ -504,7 +755,10 @@ section {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  transition: transform var(--motion-fast) var(--motion-ease-out), border-color var(--motion-base) var(--motion-ease-out), box-shadow var(--motion-base) var(--motion-ease-out);
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-base) var(--motion-ease-out),
+    box-shadow var(--motion-base) var(--motion-ease-out);
 }
 
 .project-card:hover {
@@ -609,7 +863,9 @@ section {
   border-radius: var(--radius-lg);
   text-align: center;
   padding: 24px 28px;
-  transition: transform var(--motion-fast) var(--motion-ease-out), border-color var(--motion-base) var(--motion-ease-out);
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-base) var(--motion-ease-out);
 }
 
 .stat-card:hover {
@@ -671,7 +927,10 @@ section {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: transform var(--motion-fast) var(--motion-ease-out), border-color var(--motion-base) var(--motion-ease-out), background var(--motion-base) var(--motion-ease-out);
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    border-color var(--motion-base) var(--motion-ease-out),
+    background var(--motion-base) var(--motion-ease-out);
 }
 
 .social-button:hover {
@@ -695,28 +954,14 @@ section {
 .reveal {
   opacity: 0;
   transform: translate3d(0, 14px, 0) scale(0.99);
-  transition: opacity var(--motion-slow) var(--motion-ease-emphasis), transform var(--motion-slow) var(--motion-ease-emphasis);
+  transition:
+    opacity var(--motion-slow) var(--motion-ease-emphasis),
+    transform var(--motion-slow) var(--motion-ease-emphasis);
 }
 
 .reveal.is-visible {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
-}
-
-.delay-1 {
-  transition-delay: 90ms;
-}
-
-.delay-2 {
-  transition-delay: 170ms;
-}
-
-.delay-3 {
-  transition-delay: 250ms;
-}
-
-.delay-4 {
-  transition-delay: 320ms;
 }
 
 @media (max-width: 860px) {
