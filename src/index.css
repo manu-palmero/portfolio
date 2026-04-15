@@ -504,6 +504,12 @@ section {
   border-color: rgba(186, 98, 255, 0.55);
 }
 
+.type-chip.unknown {
+  border-color: rgba(120, 120, 140, 0.55);
+  background: rgba(120, 120, 140, 0.16);
+  color: #e4e4ee;
+}
+
 /* Stats */
 .stats-grid {
   display: flex;

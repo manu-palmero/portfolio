@@ -1,29 +1,61 @@
 import { useState, useEffect, useMemo } from 'react'
 
-const PORTFOLIO_OWNER = 'manu-palmero'
-const FEATURED_LIMIT = 4
-
-const languageWeights = {
-  Kotlin: 2,
-  Python: 2,
-  JavaScript: 1.5,
-  Java: 1.5,
-  Shell: 1.25
+const FEATURED_REPOS_CONFIG = {
+  owner: 'manu-palmero',
+  limit: 4,
+  excludeForks: true,
+  requiredFields: ['name', 'url', 'language'],
+  scoreWeights: {
+    hasDescription: 2,
+    stars: 0.05,
+    forks: 0.1,
+    type: {
+      product: 2,
+      tool: 1.5,
+      library: 1.25,
+      practice: -1,
+      unknown: 0
+    },
+    language: {
+      Kotlin: 2,
+      Python: 2,
+      JavaScript: 1.5,
+      Java: 1.5,
+      Shell: 1.25,
+      fallback: 0.75
+    },
+    activity: {
+      under30d: 2,
+      under90d: 1,
+      under180d: 0.5,
+      stale: 0
+    }
+  },
+  defaults: {
+    description: 'Proyecto con metadata mínima, priorizado por señales técnicas.',
+    updatedAtLabel: 'Sin fecha reciente',
+    type: 'unknown'
+  }
 }
 
-const projectTypeWeights = {
-  product: 2,
-  tool: 1.5,
-  library: 1.25,
-  practice: -1
+function hasRequiredMetadata(repo) {
+  return FEATURED_REPOS_CONFIG.requiredFields.every((field) => Boolean(repo[field]))
+}
+
+function normalizeFeaturedRepo(repo) {
+  return {
+    ...repo,
+    type: repo.type ?? FEATURED_REPOS_CONFIG.defaults.type,
+    description: repo.description?.trim() || FEATURED_REPOS_CONFIG.defaults.description
+  }
 }
 
 function calculateRelevanceScore(repo) {
-  const hasDescription = Boolean(repo.description?.trim())
-  const languageWeight = languageWeights[repo.language] ?? 0.75
-  const starsWeight = Math.min(repo.stars ?? 0, 50) * 0.05
-  const forksWeight = Math.min(repo.forks ?? 0, 10) * 0.1
-  const typeWeight = projectTypeWeights[repo.type] ?? 0
+  const weights = FEATURED_REPOS_CONFIG.scoreWeights
+  const languageWeight = weights.language[repo.language] ?? weights.language.fallback
+  const starsWeight = Math.min(repo.stars ?? 0, 50) * weights.stars
+  const forksWeight = Math.min(repo.forks ?? 0, 10) * weights.forks
+  const typeWeight = weights.type[repo.type] ?? weights.type.unknown
 
   const lastUpdate = repo.updatedAt ? new Date(repo.updatedAt) : null
   const now = new Date()
@@ -31,13 +63,13 @@ function calculateRelevanceScore(repo) {
     ? Math.max(0, Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)))
     : 365
 
-  let activityWeight = 0
-  if (diffInDays <= 30) activityWeight = 2
-  else if (diffInDays <= 90) activityWeight = 1
-  else if (diffInDays <= 180) activityWeight = 0.5
+  let activityWeight = weights.activity.stale
+  if (diffInDays <= 30) activityWeight = weights.activity.under30d
+  else if (diffInDays <= 90) activityWeight = weights.activity.under90d
+  else if (diffInDays <= 180) activityWeight = weights.activity.under180d
 
   return Number((
-    (hasDescription ? 2 : 0) +
+    (repo.description !== FEATURED_REPOS_CONFIG.defaults.description ? weights.hasDescription : 0) +
     languageWeight +
     starsWeight +
     forksWeight +
@@ -46,16 +78,48 @@ function calculateRelevanceScore(repo) {
   ).toFixed(2))
 }
 
-function curateFeaturedRepos(repos) {
+function applyFeaturedEligibilityRules(repos) {
   return repos
-    .filter((repo) => repo.owner === PORTFOLIO_OWNER && repo.fork === false)
+    .map(normalizeFeaturedRepo)
+    .filter((repo) => repo.owner === FEATURED_REPOS_CONFIG.owner)
+    .filter((repo) => (FEATURED_REPOS_CONFIG.excludeForks ? repo.fork === false : true))
+    .filter((repo) => hasRequiredMetadata(repo))
+}
+
+function curateFeaturedRepos(repos) {
+  return applyFeaturedEligibilityRules(repos)
     .map((repo) => ({ ...repo, relevanceScore: calculateRelevanceScore(repo) }))
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, FEATURED_LIMIT)
+    .sort((a, b) => {
+      if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore
+      if ((b.stars ?? 0) !== (a.stars ?? 0)) return (b.stars ?? 0) - (a.stars ?? 0)
+      return a.name.localeCompare(b.name)
+    })
+    .slice(0, FEATURED_REPOS_CONFIG.limit)
+}
+
+function validateFeaturedRepos(rawRepos, curatedRepos) {
+  const invalidCuratedRepo = curatedRepos.find(
+    (repo) => repo.owner !== FEATURED_REPOS_CONFIG.owner || repo.fork === true
+  )
+
+  const eligibleRawCount = applyFeaturedEligibilityRules(rawRepos).length
+  const exceedsLimit = curatedRepos.length > FEATURED_REPOS_CONFIG.limit
+
+  const isSortedByScore = curatedRepos.every((repo, index) => {
+    if (index === 0) return true
+    return curatedRepos[index - 1].relevanceScore >= repo.relevanceScore
+  })
+
+  return {
+    invalidCuratedRepo,
+    eligibleRawCount,
+    exceedsLimit,
+    isSortedByScore
+  }
 }
 
 function formatRelativeUpdate(dateString) {
-  if (!dateString) return 'Sin fecha reciente'
+  if (!dateString) return FEATURED_REPOS_CONFIG.defaults.updatedAtLabel
   const date = new Date(dateString)
   const now = new Date()
   const days = Math.max(1, Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)))
@@ -307,12 +371,22 @@ function Projects() {
   const featuredProjects = useMemo(() => curateFeaturedRepos(projects), [projects])
 
   useEffect(() => {
-    const hasInvalidRepo = featuredProjects.some(
-      (project) => project.owner !== PORTFOLIO_OWNER || project.fork === true
-    )
+    const validation = validateFeaturedRepos(projects, featuredProjects)
 
-    if (hasInvalidRepo) {
+    if (validation.invalidCuratedRepo) {
       console.warn('Repositorio inválido detectado en destacados')
+    }
+
+    if (validation.exceedsLimit) {
+      console.warn('La lista de destacados supera el límite configurado')
+    }
+
+    if (!validation.isSortedByScore) {
+      console.warn('El orden de destacados no respeta score descendente')
+    }
+
+    if (validation.eligibleRawCount > 0 && featuredProjects.length === 0) {
+      console.warn('No se muestran destacados pese a tener repos elegibles')
     }
   }, [featuredProjects])
 
@@ -336,7 +410,7 @@ function Projects() {
                 <h3>{project.name}</h3>
                 <span className="relevance-chip">Score {project.relevanceScore}</span>
               </div>
-              <p>{project.description || 'Proyecto con metadata mínima, priorizado por señales técnicas.'}</p>
+              <p>{project.description}</p>
               <div className="project-meta">
                 <span className="language">
                   <span className="lang-dot"></span>
