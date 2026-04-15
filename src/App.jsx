@@ -48,8 +48,8 @@ function Hero() {
     }, 25)
     return () => clearInterval(timer)
   }, [])
-
   return (
+    // TODO: Cambiar cursor por uno en forma de I, o como el de la consola de comandos
     <section className="hero" id="hero">
       <div className="hero-bg">
         <div className="shape shape-1"></div>
@@ -58,7 +58,6 @@ function Hero() {
       </div>
       <div className="hero-content">
         <h1 className="animate-in">Manuel Palmero</h1>
-//         TODO: Cambiar cursor por uno en forma de I, o como el de la consola de comandos
         <p className="typing-text animate-in delay-1">{text}<span className="cursor">|</span></p>
         <button className="cta-button animate-in delay-2" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}>
           Ver Proyectos
