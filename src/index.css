@@ -87,13 +87,7 @@ section {
 }
 
 .navbar.scrolled {
-<<<<<<< HEAD
-  background: rgba(10, 10, 15, 0.7);
-  backdrop-filter: blur(20px);
-  padding: 12px 0;
-=======
-  background: rgba(9, 9, 11, 0.86);
->>>>>>> 49d394c14d30fb2bb139020a65ea951796f4198a
+  background: rgba(9, 9, 11, 0.75);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
   padding: 12px 0;
@@ -645,7 +639,6 @@ section {
 }
 
 .stats-note a {
-<<<<<<< HEAD
   color: var(--primary);
   transition: color 0.3s ease;
 }
@@ -661,9 +654,7 @@ section {
   color: var(--text-secondary);
   font-size: 1.1rem;
   margin-bottom: 40px;
-=======
   color: #ff9aa4;
->>>>>>> 49d394c14d30fb2bb139020a65ea951796f4198a
 }
 
 /* Contact */
@@ -780,8 +771,6 @@ section {
     justify-content: center;
   }
 }
-<<<<<<< HEAD
-=======
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -798,4 +787,3 @@ section {
     transform: none;
   }
 }
->>>>>>> 49d394c14d30fb2bb139020a65ea951796f4198a
