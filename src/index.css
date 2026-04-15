@@ -10,7 +10,7 @@
 }
 
 .navbar.scrolled {
-  background: rgba(10, 10, 15, 0.9);
+  background: rgba(10, 10, 15, 0.7);
   backdrop-filter: blur(20px);
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
@@ -437,6 +437,7 @@
 /* Contact Section */
 .contact-text {
   text-align: center;
+  justify-content: center;
   color: var(--text-secondary);
   font-size: 1.1rem;
   margin-bottom: 40px;
