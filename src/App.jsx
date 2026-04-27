@@ -23,6 +23,18 @@ export default function App() {
       <Projects />
       <Stats />
       <Contact />
+      
+      {/* Botón para volver al principio */}
+      <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '60px' }}>
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="social-button"
+          style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem', color: 'var(--text-primary)' }}
+        >
+          ↑ Volver al principio
+        </button>
+      </div>
+
       <Footer />
     </>
   );
