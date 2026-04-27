@@ -2,6 +2,11 @@
   --font-heading: "Inter", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
 
+  body, #root {
+    background-color: transparent !important;
+  }
+  
+
   --bg: #09090b;
   --bg-elevated: #111113;
   --surface: #15151a;

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shader Wallpapers — Futuristic OS</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0a0a0c; color: #e8e8ea; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    #root { width: 100vw; height: 100vh; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="shader-wallpaper.jsx"></script>
+  <script type="text/babel" src="shaders.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+    const ShaderWallpaper = window.ShaderWallpaper;
+    const SHADERS = window.SHADERS;
+
+    const ART_W = 960;
+    const ART_H = 600;
+
+    function App() {
+      return (
+        <DesignCanvas
+          title="Shader Wallpapers"
+          subtitle="Five interactive ambient shaders for a futuristic OS — move the cursor, click to interact. Click any tile's expand button to view fullscreen."
+        >
+          <DCSection id="ambient" title="Ambient" subtitle="Soft, atmospheric — meant to live behind windows.">
+            <DCArtboard id="aurora" label="01 — Liquid Aurora" width={ART_W} height={ART_H}>
+              <ShaderWallpaper
+                frag={SHADERS.aurora}
+                label="Liquid Aurora"
+                hint="move · click for ripple"
+              />
+            </DCArtboard>
+            <DCArtboard id="caustic" label="02 — Caustic Pool" width={ART_W} height={ART_H}>
+              <ShaderWallpaper
+                frag={SHADERS.caustic}
+                label="Caustic Pool"
+                hint="move · click drops a pebble"
+              />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="reactive" title="Reactive" subtitle="Stronger structure — invites fidgeting.">
+            <DCArtboard id="voronoi" label="03 — Voronoi Cells" width={ART_W} height={ART_H}>
+              <ShaderWallpaper
+                frag={SHADERS.voronoi}
+                label="Voronoi Cells"
+                hint="move · click flashes a cell"
+              />
+            </DCArtboard>
+            <DCArtboard id="magnetic" label="04 — Magnetic Field" width={ART_W} height={ART_H}>
+              <ShaderWallpaper
+                frag={SHADERS.magnetic}
+                label="Magnetic Field"
+                hint="move · click flips polarity"
+              />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="material" title="Material" subtitle="Substance and depth — feels like a physical surface.">
+            <DCArtboard id="crystal" label="05 — Crystalline" width={ART_W} height={ART_H}>
+              <ShaderWallpaper
+                frag={SHADERS.crystal}
+                label="Crystalline"
+                hint="move rotates · click shockwave"
+              />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
