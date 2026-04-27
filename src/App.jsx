@@ -1,16 +1,21 @@
-import { Navbar } from "./components/Navbar";
-import { Hero } from "./components/Hero";
-import { About } from "./components/About";
-import { Skills } from "./components/Skills";
-import { Projects } from "./components/Projects";
-import { Stats } from "./components/Stats";
-import { Contact } from "./components/Contact";
-import { Footer } from "./components/Footer";
+import { Navbar } from './components/Navbar';
+import { Hero } from './components/Hero';
+import { About } from './components/About';
+import { Skills } from './components/Skills';
+import { Projects } from './components/Projects';
+import { Stats } from './components/Stats';
+import { Contact } from './components/Contact';
+import { Footer } from './components/Footer';
 
-// Composición de la página: orden de secciones de arriba hacia abajo
-function App() {
+// 1. Importás el componente Wallpaper
+import { Wallpaper } from './components/Wallpaper';
+
+export default function App() {
   return (
-    <div className="app">
+    <>
+      {/* 2. Lo ponés al principio del fragmento/contenedor principal */}
+      <Wallpaper />
+      
       <Navbar />
       <Hero />
       <About />
@@ -19,8 +24,6 @@ function App() {
       <Stats />
       <Contact />
       <Footer />
-    </div>
+    </>
   );
 }
-
-export default App;
