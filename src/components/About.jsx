@@ -4,7 +4,7 @@ export function About() {
     <section className="about" id="about">
       <div className="container">
         <h2 className="section-title animate-in">Sobre Mí</h2>
-        <div className="about-card animate-in ">
+        <div className="about-card animate-in">
           <div className="avatar">
             <span>MP</span>
           </div>

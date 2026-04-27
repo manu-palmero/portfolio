@@ -26,13 +26,13 @@ float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 void main(){
   vec2 uv = gl_FragCoord.xy / u_resolution.xy;
   vec2 p = (gl_FragCoord.xy - 0.5*u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-  vec2 m = u_smooth - 0.5;
+  vec2 m = (u_smooth - 0.5) * u_resolution.xy / min(u_resolution.x, u_resolution.y);
 
   // pebble ripple
-  vec2 cp = u_clickPos - 0.5;
+  vec2 cp = (u_clickPos - 0.5) * u_resolution.xy / min(u_resolution.x, u_resolution.y);
   float rd = length(p - cp);
   float ringR = (1.0 - u_click) * 1.6;
-  float ripple = sin((rd - ringR)*40.0) * exp(-abs(rd-ringR)*8.0) * u_click;
+  float ripple = sin((rd - ringR)*20.0) * exp(-abs(rd-ringR)*5.0) * u_click; // Ondas más espaciadas y anchas
 
   // mouse-driven gentle hill
   vec2 dm = p - m;
@@ -142,19 +142,17 @@ export const Wallpaper = ({ autoDrift = true }) => {
     ro.observe(canvas);
 
     const onMove = (e) => {
-      const r = canvas.getBoundingClientRect();
       stateRef.current.mouse = [
-        (e.clientX - r.left) / r.width,
-        1 - (e.clientY - r.top) / r.height,
+        e.clientX / window.innerWidth,
+        1 - (e.clientY / window.innerHeight),
       ];
       lastInteract = performance.now();
     };
 
     const onDown = (e) => {
-      const r = canvas.getBoundingClientRect();
       stateRef.current.clickPos = [
-        (e.clientX - r.left) / r.width,
-        1 - (e.clientY - r.top) / r.height,
+        e.clientX / window.innerWidth,
+        1 - (e.clientY / window.innerHeight),
       ];
       stateRef.current.click = 1;
       stateRef.current.polarity *= -1;
@@ -180,7 +178,7 @@ export const Wallpaper = ({ autoDrift = true }) => {
 
       st.smooth[0] += (st.mouse[0] - st.smooth[0]) * 0.08;
       st.smooth[1] += (st.mouse[1] - st.smooth[1]) * 0.08;
-      st.click *= 0.96;
+      st.click *= 0.992; // Todavía más lento para que las ondas viajen con calma
 
       gl.uniform2f(u.resolution, canvas.width, canvas.height);
       gl.uniform1f(u.time, t);
